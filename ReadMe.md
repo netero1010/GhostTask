@@ -10,6 +10,7 @@ The tool offers the following features:
 - Establishes scheduled tasks directly via the registry, bypassing the generation of standard Windows event logs.
 - Provides support to modify existing scheduled tasks without generating Windows event logs.
 - Supports remote scheduled task creation (by using specially crafted Silver Ticket).
+- Supports to run in C2 with in-memory PE execution module (e.g., `BruteRatel's memexec`)
 
 *Remark:
 - As of October 21, 2023, this tool has been tested on Windows 10, Windows Server 2016, 2019, and 2022
