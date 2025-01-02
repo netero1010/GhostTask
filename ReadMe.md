@@ -1,9 +1,7 @@
 # Ghost Scheduled Task
-While using scheduled tasks as a means of persistence is not a novel approach, threat actors have employed various techniques to conceal their malicious tasks. A notable method involves [removing the SD registry key](https://www.microsoft.com/en-us/security/blog/2022/04/12/tarrask-malware-uses-scheduled-tasks-for-defense-evasion/), which represents the security descriptor, thereby obscuring the scheduled task from forensic investigations.
+Inspired by [WithSecure](https://twitter.com/WithSecure)'s research on [Scheduled Task Tampering](https://labs.withsecure.com/publications/scheduled-task-tampering), they explained the feasibility of creating a scheduled task solely through registry key manipulation. Such an approach can bypass the generation of scheduled task creation event logs, such as `4698` and `106`, providing a stealthier method for establishing persistence. In light of these insights, I developed this POC to demonstrate the creation of scheduled tasks through direct registry manipulation.
 
-Inspired by [WithSecure](https://twitter.com/WithSecure)'s research on [Scheduled Task Tampering](https://labs.withsecure.com/publications/scheduled-task-tampering), they explained the feasibility of creating a scheduled task solely through registry key manipulation. Such an approach can bypass the generation of scheduled task creation event logs, like `4698` and `106`, offering a more stealth method of establishing persistence. In light of these insights, I've crafted this POC to demonstrate creating scheduled tasks via direct registry manipulation.
-
-Given the undocumented nature of the registry key data structures related to scheduled tasks, my methodology for crafting them primarily relied on trial and error by comparing them with legitimate scheduled tasks. I also made references to the interfaces within `Taskschd.h` and drew extensively from [Cyber.WTF Windows Registry Analysis – Today's Episode: Tasks](https://cyber.wtf/2022/06/01/windows-registry-analysis-todays-episode-tasks/). This research was invaluable in guiding me to formulate the data structures for key registry components, such as `Triggers`, `Actions`, and `DynamicInfo`, which were essential to construct a functional scheduled task.
+Creating a new scheduled task requires adding several registry keys and their associated values. Since the structure of the registry values related to scheduled tasks is undocumented, my methodology for constructing these structures primarily relied on trial and error, guided by comparisons with the registry values of legitimate scheduled tasks. Besides, I also referred to the interfaces in the `Taskschd.h` header file and drew extensively from [Cyber.WTF Windows Registry Analysis – Today's Episode: Tasks](https://cyber.wtf/2022/06/01/windows-registry-analysis-todays-episode-tasks/). This research was invaluable in guiding me to formulate the structure of each registry value, such as `Triggers`, `Actions`, and `DynamicInfo`, which were essential to construct a functional scheduled task.
 
 The tool offers the following features:
 - Creates scheduled tasks with a restrictive security descriptor, making them invisible to all users.
@@ -42,7 +40,7 @@ x86_64-w64-mingw32-gcc GhostTask.c -o GhostTask.exe -lrpcrt4
 ```
 
 ## Examples
-### 1. Create a new scheduled task that will call notepad.exe every Monday and Thursday at 2:12 pm:
+### 1. Create a scheduled task that launches notepad.exe every Monday and Thursday at 2:12 pm:
 ```
 GhostTask.exe localhost add demo "cmd.exe" "/c notepad.exe" LAB\Administrator weekly 14:12 monday,thursday
 ```
@@ -56,12 +54,12 @@ GhostTask.exe localhost add "Microsoft\Office\Office Automatic Updates 2.0" "cmd
 
 ### 3. Create a new scheduled task on remote computer:
 
-As discussed in the WithSecure blog ([Extra: Lateral Movement](https://labs.withsecure.com/publications/scheduled-task-tampering) section), you can use specially crafted Silver Ticket to modify registry keys associated to scheduled tasks on . This allows you to create a scheduled task remotely.
+As outlined in the WithSecure blog ([Extra: Lateral Movement](https://labs.withsecure.com/publications/scheduled-task-tampering) section), this technique can be used to remotely create a new scheduled task with a specially crafted Silver Ticket.
 ```
 kerberos::golden /domain:LAB.CORP /sid:S-1-5-21-1111111111-1111111111-1111111111 /aes256:[aes256hash] /user:Administrator /service:cifs /target:dc01.lab.corp /sids:S-1-5-18 /endin:600 /renewmax:10080
 ```
 
-Create a new scheduled task on the DC01 server remotely, which will launch notepad.exe every day at 3:19 pm:
+Create a new scheduled task remotely on the DC01 server that launches notepad.exe every day at 3:19 PM:
 ```
 GhostTask.exe DC01.lab.corp add demo "cmd.exe" "/c notepad.exe" LAB\Administrator daily 15:19
 ```
